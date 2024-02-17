@@ -33,6 +33,29 @@ std::vector<std::string> runGreedyAndGetTestPredictions(HMM& hmm, const DataFram
 	
 }
 
+std::vector<std::string> runViterbiAndGetTestPredictions(HMM& hmm, const DataFrame& train, const DataFrame& dev, const DataFrame& test) {
+
+	TimeVar viterbiStart = timeNow();
+	std::vector<std::string> trainTags = hmm.viterbi(train);
+	TimeVar viterbiEnd = timeNow();
+	std::cout << "Took " << duration(viterbiEnd - viterbiStart) << " sec for HMM prediction on train\n";
+	std::cout << "Viterbi accuracy for train: " << hmm.accuracy_score(train, trainTags) * 100 << "%\n";
+
+	viterbiStart = timeNow();
+	std::vector<std::string> devTags = hmm.viterbi(dev);
+	viterbiEnd = timeNow();
+	std::cout << "Took " << duration(viterbiEnd - viterbiStart) << " sec for HMM prediction on dev\n";
+	std::cout << "Viterbi accuracy for dev: " << hmm.accuracy_score(dev, devTags) * 100 << "%\n";
+
+	viterbiStart = timeNow();
+	std::vector<std::string> testTags = hmm.viterbi(test);
+	viterbiEnd = timeNow();
+	std::cout << "Took " << duration(viterbiEnd - viterbiStart) << " sec for HMM prediction on test\n";
+
+	return testTags;
+
+}
+
 int main() {
 	std::string trainFilePath = "train_path";
 	std::string testFilePath = "test_path";
@@ -49,6 +72,7 @@ int main() {
 	
 	std::cout << "Took " << duration(hmmEnd - hmmStart) << " sec for HMM training\n";
 
-	std::vector<std::string> testPredictions = runGreedyAndGetTestPredictions(hmm, train, dev, test);
+	std::vector<std::string> testPredictionsGreedy = runGreedyAndGetTestPredictions(hmm, train, dev, test);
+	std::vector<std::string> testPredictionsViterbi = runViterbiAndGetTestPredictions(hmm, train, dev, test);
 
 }

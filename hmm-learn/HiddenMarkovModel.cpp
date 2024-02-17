@@ -2,10 +2,13 @@
 #include <iostream>
 
 const std::string UNKNOWN_TOKEN = "< unk >";
+const std::string BACKPOINTER_END_TAG = "< end >";
 
 
-size_t PairHash::operator()(const std::pair<std::string, std::string>& p) const {
-	return std::hash<std::string>()(p.first) ^ (std::hash<std::string>()(p.second) << 1);
+template<typename T, typename U>
+inline size_t PairHash::operator()(const std::pair<T, U>& key) const
+{
+	return std::hash<T>()(key.first) ^ std::hash<U>()(key.second);
 }
 
 std::unordered_map<std::string, int> getCounts(const std::vector<std::string> &strings) {
@@ -66,7 +69,7 @@ HMM::HMM(const DataFrame &df) {
 
 	// Populate transition and emission map with counts;
 
-	for (int index = 0;index < df.rows.size() - 2;index++) {
+	for (size_t index = 0;index < df.rows.size() - 2;index++) {
 
 		std::string sourceTag = df.rows[index].tag;
 		std::string destinationTag = df.rows[index + 1].tag;
@@ -188,6 +191,40 @@ std::vector<std::string> HMM::greedy(const DataFrame &df) {
 	return tagList;
 }
 
+std::vector<std::string> HMM::viterbi(const DataFrame& df)
+{
+	std::vector<std::string> tagList;
+	std::vector<std::string> sentence;
+
+	for (const Row& row : df.rows) {
+
+		std::string word;
+
+		if (wordSet.find(row.word) == wordSet.end()) {
+			word = UNKNOWN_TOKEN;
+		}
+		else {
+			word = row.word;
+		}
+
+		if (row.index == 1 && sentence.size() > 0) {
+
+			std::vector<std::string> sentenceTags = processSingleSentenceForViterbi(sentence);
+			tagList.insert(tagList.end(), sentenceTags.begin(), sentenceTags.end());
+			sentence.clear();
+		}
+
+		sentence.push_back(word);
+	}
+
+	if (sentence.size() > 0) {
+		std::vector<std::string> sentenceTags = processSingleSentenceForViterbi(sentence);
+		tagList.insert(tagList.end(), sentenceTags.begin(), sentenceTags.end());
+	}
+
+	return tagList;
+}
+
 float HMM::accuracy_score(const DataFrame &df, const std::vector<std::string> &calculatedTags) {
 	float accuracy = 0.0f;
 
@@ -196,7 +233,7 @@ float HMM::accuracy_score(const DataFrame &df, const std::vector<std::string> &c
 		exit(1);
 	}
 
-	for (int index = 0;index < calculatedTags.size();index++) {
+	for (size_t index = 0;index < calculatedTags.size();index++) {
 		if (calculatedTags[index] == df.rows[index].tag) {
 			accuracy += 1;
 		}
@@ -204,3 +241,75 @@ float HMM::accuracy_score(const DataFrame &df, const std::vector<std::string> &c
 
 	return accuracy / calculatedTags.size();
 }
+
+std::vector<std::string> HMM::processSingleSentenceForViterbi(const std::vector<std::string>& sentence)
+{
+	std::unordered_map<std::pair<std::string, int>, float, PairHash> memo;
+	std::unordered_map<std::pair<std::string, int>, std::string, PairHash> backPointer;
+
+	for (std::string tag : tagSet) {
+
+		std::pair<std::string, std::string> emissionPair = std::make_pair(tag, sentence[0]);
+
+		float initialProbability = initialProbabilities[tag];
+		float emissionProbability = emissions[emissionPair];
+
+		memo[std::make_pair(tag, 0)] = initialProbability * emissionProbability;
+		backPointer[std::make_pair(tag, 0)] = BACKPOINTER_END_TAG;
+	}
+
+	for (size_t index = 1;index < sentence.size();index++) {
+
+		for (std::string tag : tagSet) {
+
+			std::string bestPreviousTag;
+			float bestProbability = -1.0f;
+
+			for (std::string previousTag : tagSet) {
+
+				float previousProbability = memo[std::make_pair(previousTag, index - 1)];
+				float transitionProbability = transitions[std::make_pair(previousTag, tag)];
+				float emissionProbability = emissions[std::make_pair(tag, sentence[index])];
+
+				float probability = previousProbability * transitionProbability * emissionProbability;
+
+				if (probability > bestProbability) {
+					bestProbability = probability;
+					bestPreviousTag = previousTag;
+				}
+			}
+
+			memo[std::make_pair(tag, index)] = bestProbability;
+			backPointer[std::make_pair(tag, index)] = bestPreviousTag;
+
+			std::cout << "Processed tag = " << tag << '\n';
+		}
+	}
+
+	float bestPathProbability = -1.0f;
+	std::string bestPathBackPointer;
+
+	for (std::string tag : tagSet) {
+
+		std::pair<std::string, int> lastPair = std::make_pair(tag, sentence.size() - 1);
+
+		if (memo[lastPair] > bestPathProbability) {
+			bestPathProbability = memo[lastPair];
+			bestPathBackPointer = tag;
+		}
+	}
+
+	std::vector<std::string> predictedTags = { bestPathBackPointer };
+	
+	for (size_t index = sentence.size() - 1; index > 0;index--) {
+		std::string previousTag = backPointer[std::make_pair(bestPathBackPointer, index)];
+		predictedTags.push_back(previousTag);
+		bestPathBackPointer = previousTag;
+	}
+
+	std::reverse(predictedTags.begin(), predictedTags.end());
+
+	return predictedTags;
+}
+
+

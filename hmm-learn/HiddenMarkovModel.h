@@ -10,7 +10,8 @@
 
 
 struct PairHash {
-	size_t operator()(const std::pair<std::string, std::string>& p) const;
+	template <typename T, typename U>
+	size_t operator()(const std::pair<T, U>& key) const;
 };
 
 class HMM {
@@ -26,8 +27,10 @@ public:
 
 	HMM(const DataFrame &df);
 	std::vector<std::string> greedy(const DataFrame &df);
-	std::vector<std::string> viterbi(DataFrame df);
+	std::vector<std::string> viterbi(const DataFrame &df);
 	float accuracy_score(const DataFrame &df, const std::vector<std::string> &calculatedTags);
+private:
+	std::vector<std::string> processSingleSentenceForViterbi(const std::vector<std::string>& sentence);
 
 };
 
