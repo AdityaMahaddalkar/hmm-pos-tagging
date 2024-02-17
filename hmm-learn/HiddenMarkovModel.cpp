@@ -281,8 +281,6 @@ std::vector<std::string> HMM::processSingleSentenceForViterbi(const std::vector<
 
 			memo[std::make_pair(tag, index)] = bestProbability;
 			backPointer[std::make_pair(tag, index)] = bestPreviousTag;
-
-			std::cout << "Processed tag = " << tag << '\n';
 		}
 	}
 
