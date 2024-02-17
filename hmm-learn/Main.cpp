@@ -34,9 +34,9 @@ std::vector<std::string> runGreedyAndGetTestPredictions(HMM& hmm, const DataFram
 }
 
 int main() {
-	std::string trainFilePath = "C:\\Aditya\\Work\\USC\\anlp\\HW3\\data\\train";
-	std::string testFilePath = "C:\\Aditya\\Work\\USC\\anlp\\HW3\\data\\test";
-	std::string devFilePath = "C:\\Aditya\\Work\\USC\\anlp\\HW3\\data\\dev";
+	std::string trainFilePath = "train_path";
+	std::string testFilePath = "test_path";
+	std::string devFilePath = "dev_path";
 
 	FileReader fileReader;
 	DataFrame train = fileReader.readFile(trainFilePath);
