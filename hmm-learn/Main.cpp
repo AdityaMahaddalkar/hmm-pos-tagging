@@ -56,10 +56,16 @@ std::vector<std::string> runViterbiAndGetTestPredictions(HMM& hmm, const DataFra
 
 }
 
-int main() {
-	std::string trainFilePath = "train_path";
-	std::string testFilePath = "test_path";
-	std::string devFilePath = "dev_path";
+int main(int argc, char** argv) {
+
+	if (argc != 4) {
+		std::cerr << "Error! Number of arguments to the file not satisfied. Required arguments = 4";
+		exit(1);
+	}
+
+	std::string trainFilePath = argv[1];
+	std::string testFilePath = argv[2];
+	std::string devFilePath = argv[3];
 
 	FileReader fileReader;
 	DataFrame train = fileReader.readFile(trainFilePath);
