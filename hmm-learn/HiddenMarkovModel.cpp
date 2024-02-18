@@ -114,12 +114,12 @@ HMM::HMM(const DataFrame &df) {
 
 	for (std::pair<const std::pair<std::string, std::string>, float>& transitionPair : transitions) {
 		const std::string sourceTag = transitionPair.first.first;
-		transitionPair.second /= tagCountMap[sourceTag]; //TODO: Check for no key found
+		transitionPair.second /= tagCountMap[sourceTag];
 	}
 
 	for (std::pair<const std::pair<std::string, std::string>, float>& emissionPair : emissions) {
 		const std::string tag = emissionPair.first.first;
-		emissionPair.second /= tagCountMap[tag]; // TODO: Check for no key found
+		emissionPair.second /= tagCountMap[tag];
 	}
 }
 
